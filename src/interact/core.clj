@@ -1,61 +1,59 @@
 (ns interact.core
+  "Pendulum Mayhem"
   (:require [quil.core :refer :all]))
 
+
 (def Tau (* 2 Math/PI))
-(def g 9.8)
+(def gravity 9.8)
 
-(defn phi [t T]
-  (Math/cos (* Tau (/ t T))))
+(defn phi [t period]
+  (Math/cos (* Tau (/ t period))))
 
-(phi 0 100)
-(phi 10 100)
-(phi 50 100)
-(phi 75 100)
-(phi 100 100)
-(phi 150 100)
+(defn length2period [length]
+  (* Tau (Math/sqrt (/ length gravity))))
 
-(defn period [length]
-  (* Tau (Math/sqrt (/ length g))))
+(defn draw-pendulum [position length]
+  (let [p (phi (frame-count) (length2period length))]
+    (with-translation [position]
+      (with-rotation [(/ p 3)]
+        (stroke-weight 5)
+        (stroke 128 0 0)
+        (fill 100 0 0)
+        (line 0 0 0 length)
+        (stroke 255)
+        (fill 100)
+        (ellipse 0 length 30 30)))))
 
-(period 100)
-(period 200)
-
-
-(def ct (atom 0))
 (def pendulums (atom []))
 
-(defn draw-pendulum [{position :position
-                      length :length}]
-  (with-translation [position]
-    (with-rotation [(/ (phi @ct (period length)) 2)]
-      (stroke 255)
-      (stroke-weight 5)
-      (fill 100)
-      (ellipse 0 length 30 30)
-      (stroke 128 0 0)
-      (fill 100 0 0)
-      (line 0 0 0 length))))
-
 (defn add-pendulum [position length]
-  (swap! pendulums conj {:position position
-                         :length length}))
+  (swap! pendulums conj [position length]))
 
-;(add-pendulum [300 50] 300)
+(defn clear []
+  (reset! pendulums []))
+
+(add-pendulum [100 50] 200)
+(clear)
 
 
-(dotimes [i 12]
-  (add-pendulum [200 50] (+ 200 (* i 10))))
+(defn freq2length [freq]
+  (let [period (/ 700 freq)]
+    (/ (* period period gravity) Tau)))
+
+(doseq [length (map freq2length (range 46 91))]
+  (add-pendulum [200 50] length))
 
 
 (defn draw []
-  (swap! ct #(+ % 0.25))
   (background-float 0)
-  (doseq [p @pendulums]
-    (draw-pendulum p)))
+  (doseq [[position length] @pendulums]
+    (draw-pendulum position length)))
+
 
 (sketch
  :title "Pendulum Mayhem"
  :draw draw
  :size [400 400])
+
 
 
